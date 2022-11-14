@@ -3,6 +3,8 @@ Managing smart-grid resources with a distributed SCADA implemented with OWL
 
 # System Overview
 
+Scowl is built out of three (3) core entities. In the real world, each entity would reside on a discrete host connected over the Internet. For the purposes of evaluation, each `Tracker` has its own host, which it shares with the `Peers` and `SuperPeers` it is responsible for.
+
 ## Tracker
 Equivalent to a `region`al grid controller. Holds region state including total generation and demand. Computes *ephemeral distribution trees* for each `generator`, fitting as many `consumer`s within its tree as is safe to do.
 
