@@ -39,3 +39,8 @@ Storage (Super-Peers), must respond to `StartStoring()` and `StopStoring()` RPCs
 
 # Trackers
 Trackers compute *ephemeral distribution trees* for temporary groups of `Generator`s and `Consumer`s within its region. Trackers match a `Consumer` with `Generator` such that the maximum amount of available generation is being utilized and the number of *starving* consumers is minimized.
+
+# Evaluation
+Evaluation will focus on metrics such as:
+- Average ∆<sub>generator_load</sub> between all `generator`s their their `tracker`s. This metric is important because it helps us understand how much unmanaged load existed on the grid at a given moment in time.
+- How does CPU load change as ratios between `generator`s and `consumer`s changes. (The G:C ratio.)
