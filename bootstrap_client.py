@@ -46,16 +46,7 @@ def run():
         print("-------------- Consumer  ID --------------")
         consumer_id = getConsumerID(stub)
         print("Received Consumer ID: {}".format(consumer_id.id))
-
         print("--------------      FIN     --------------")
-        # print("-------------- GetFeature --------------")
-        # guide_get_feature(stub)
-        # print("-------------- ListFeatures --------------")
-        # guide_list_features(stub)
-        # print("-------------- RecordRoute --------------")
-        # guide_record_route(stub)
-        # print("-------------- RouteChat --------------")
-        # guide_route_chat(stub)
 
 
 if __name__ == '__main__':
