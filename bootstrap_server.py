@@ -12,9 +12,10 @@ import scowl_pb2_grpc
 # 
 
 def LogRequest(request, context):
-    print("{} – Request received".format(datetime.datetime.now()))
-    print("Request: {} ({})".format(request, type(request)))
-    print("Context: {} ({})".format(context, type(context)))
+    print("------------ Request Received ------------")
+    print("Date    {}".format(datetime.datetime.now()))
+    print("Request {}".format(request.addr))
+    print("Context {}".format(context.peer()))
 
 
 class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
@@ -38,7 +39,7 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
             scowl_pb2.Id32Bit # [int]
         """
         LogRequest(request, context)
-        return scowl_pb2.Id32Bit(32000)
+        return scowl_pb2.Id32Bit(id=str(32000))
 
     def ConsumerJoin(self, request, context):
         """request: scowl_pb2.PeerCtx # [str]
@@ -47,7 +48,7 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
             scowl_pb2.Id32Bit # [int]
         """
         LogRequest(request, context)
-        return scowl_pb2.Id128Bit(128000)
+        return scowl_pb2.Id128Bit(id=str(128000))
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -55,6 +56,7 @@ def serve():
         BootstrapServicer(), server)
     server.add_insecure_port('[::]:50051')
     server.start()
+    print("------------- Server Started -------------")
     server.wait_for_termination()
 
 
