@@ -4,19 +4,6 @@ import grpc
 import scowl_pb2
 import scowl_pb2_grpc
 
-def getConsumerID(stub):
-    """Request a 128-bit id.
-
-    Today, this is a 128-bit hash given an input of an IPv4 address.
-        For DDOS resistance, the bootstrap server contenates the received
-        IP address with a nonce before hashing.
-
-    In the future, ConsumerID could default to a IPv6 address.
-        This would require secondary loadbalancing logic at the trackers.
-    """
-    return stub.ConsumerJoin(scowl_pb2.PeerCtx(addr='192.168.0.1'))
-
-
 def getGeneratorID(stub):
     """Request a 32-bit id.
 
@@ -30,7 +17,19 @@ def getGeneratorID(stub):
     In the future, GeneratorID could use an IPv6 address, of 128-bit hash.
         This would require secondary loadbalancing logic at the trackers.
     """
-    return stub.GeneratorJoin(scowl_pb2.PeerCtx(addr='192.168.0.2'))
+    return stub.GeneratorJoin(scowl_pb2.PeerCtx(addr='192.168.0.1'))
+
+def getConsumerID(stub):
+    """Request a 128-bit id.
+
+    Today, this is a 128-bit hash given an input of an IPv4 address.
+        For DDOS resistance, the bootstrap server contenates the received
+        IP address with a nonce before hashing.
+
+    In the future, ConsumerID could default to a IPv6 address.
+        This would require secondary loadbalancing logic at the trackers.
+    """
+    return stub.ConsumerJoin(scowl_pb2.PeerCtx(addr='192.168.0.2:3000'))
 
 def run():
     # NOTE(gRPC Python Team): .close() is possible on a channel and should be
