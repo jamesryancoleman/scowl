@@ -17,6 +17,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # log file path
 LOG_PATH = 'logs/bootstrap_server.log'
 
+# Tracker IP address and port
+TRACKER_ADDR = 'localhost:50052'
+
 # this file should start with the general purpose fuctions that the 
 # BootstrapServicer class calls.
 
@@ -25,19 +28,35 @@ def LogRequest(request, context, response=None, to_log=False):
         with open(LOG_PATH, 'a') as f:
             f.write('------------ Request Received ------------\n')
             f.write('Date:     {}\n'.format(datetime.datetime.now()))
-            f.write('Request:  {}\n'.format(request.addr))
-            f.write('Context:  {}\n'.format(context.peer()))
+            f.write('From:     {}\n'.format(request.addr))
+            # f.write('Context:  {}\n'.format(context.peer()))
+            f.write('Type:     "{}"\n'.format(request.kind))
+            f.write('Capacity: {}\n'.format(request.capacity))
             if response is not None:
                 f.write('Response: {}\n'.format(response))
             # f.write("------------ Request Handled  ------------\n")
     else:
         print("------------ Request Received ------------")
         print("Date     {}".format(datetime.datetime.now()))
-        print("Request  {}".format(request.addr))
+        print("Gen addr {}".format(request.addr))
+        print("Type     {}".format(request.kind))
+        print("Capacity {}".format(request.capacity))
         print("Context  {}".format(context.peer()))
         if response is not None:
             print("Response {}".format(response))
         print("------------ Request Handled  ------------")
+
+def ShareNewGenerator(addr, id, kind, capacity):
+    """Share new Generator w/ Tracker"""
+    with grpc.insecure_channel(TRACKER_ADDR) as channel:
+        stub = scowl_pb2_grpc.TrackerStub(channel)
+        stub.RegisterGenerator(scowl_pb2.GeneratorMetadata(
+            addr=addr,
+            id=id,
+            kind=kind,
+            capacity=capacity)) # returns None
+    print("--- Triaged Generator ---")
+    print("ID: {}".format(id))
 
 
 class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
@@ -55,6 +74,7 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
         # id_str = id.to_bytes(4, "big", signed=True).decode('unicode_escape')
         LogRequest(request, context, id, to_log=True)
         # TODO: Trigger tracker and metronome registration here.
+        ShareNewGenerator(request.addr, str(id), request.kind, request.capacity)
         return scowl_pb2.Id32Bit(id=str(id))
 
     def ConsumerJoin(self, request, context):

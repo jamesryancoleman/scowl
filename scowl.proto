@@ -1,0 +1,52 @@
+/*
+Run this to recompile grpc outputs:
+python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. scowl.proto
+*/
+
+// you need this or protoc defaults to version 2
+syntax = "proto3";
+
+// We could use the below package to get a default empty type. But, 
+// it's more clear if we copy.
+// package google.protobuf;
+
+message Empty {} // we'll use this in place of a Void or None return type.
+
+message PeerCtx {
+    string addr = 1; // IPv4 and Port Number
+}
+
+message GeneratorCtx {
+    string addr = 1;     // IPv4 and Port Number
+    string kind = 2;     // what type of generation facility is it
+    double capacity = 3; // in MegaWatts
+}
+
+message Id32Bit {
+    string id = 1; // 32-bit hash used to identify generators
+}
+
+message Id128Bit {
+    string id = 1; // 128-bit hash used to identify consumers
+}
+
+// the interfaces exported by the bootstrapping server
+service Bootstrap {
+    // An RPC for a generator to request credentials from
+    rpc GeneratorJoin(GeneratorCtx) returns (Id32Bit) {}
+    // An RPC for a consumer to request credentials from
+    rpc ConsumerJoin(PeerCtx) returns (Id128Bit) {}
+}
+
+message GeneratorMetadata {
+    string addr = 1;     // src addr  port, of format '111.111.1.1:32000'
+    string id = 2;       // too small to support 128-bit IDs. Day-2 issue
+    string kind = 3;     // what type of generation facility is it
+    double capacity = 4; // in MegaWatts
+}
+
+// the interfaces exported by tracker servers
+service Tracker {
+    // RPC for a tracker to recevieve generator state from the bootstrap server.
+    rpc RegisterGenerator(GeneratorMetadata) returns (Empty) {}
+}

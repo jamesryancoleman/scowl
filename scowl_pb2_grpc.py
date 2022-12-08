@@ -17,7 +17,7 @@ class BootstrapStub(object):
         """
         self.GeneratorJoin = channel.unary_unary(
                 '/Bootstrap/GeneratorJoin',
-                request_serializer=scowl__pb2.PeerCtx.SerializeToString,
+                request_serializer=scowl__pb2.GeneratorCtx.SerializeToString,
                 response_deserializer=scowl__pb2.Id32Bit.FromString,
                 )
         self.ConsumerJoin = channel.unary_unary(
@@ -50,7 +50,7 @@ def add_BootstrapServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'GeneratorJoin': grpc.unary_unary_rpc_method_handler(
                     servicer.GeneratorJoin,
-                    request_deserializer=scowl__pb2.PeerCtx.FromString,
+                    request_deserializer=scowl__pb2.GeneratorCtx.FromString,
                     response_serializer=scowl__pb2.Id32Bit.SerializeToString,
             ),
             'ConsumerJoin': grpc.unary_unary_rpc_method_handler(
@@ -81,7 +81,7 @@ class Bootstrap(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Bootstrap/GeneratorJoin',
-            scowl__pb2.PeerCtx.SerializeToString,
+            scowl__pb2.GeneratorCtx.SerializeToString,
             scowl__pb2.Id32Bit.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -100,5 +100,70 @@ class Bootstrap(object):
         return grpc.experimental.unary_unary(request, target, '/Bootstrap/ConsumerJoin',
             scowl__pb2.PeerCtx.SerializeToString,
             scowl__pb2.Id128Bit.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+
+class TrackerStub(object):
+    """the interfaces exported by tracker servers
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.RegisterGenerator = channel.unary_unary(
+                '/Tracker/RegisterGenerator',
+                request_serializer=scowl__pb2.GeneratorMetadata.SerializeToString,
+                response_deserializer=scowl__pb2.Empty.FromString,
+                )
+
+
+class TrackerServicer(object):
+    """the interfaces exported by tracker servers
+    """
+
+    def RegisterGenerator(self, request, context):
+        """RPC for a tracker to recevieve generator state from the bootstrap server.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_TrackerServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'RegisterGenerator': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterGenerator,
+                    request_deserializer=scowl__pb2.GeneratorMetadata.FromString,
+                    response_serializer=scowl__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'Tracker', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class Tracker(object):
+    """the interfaces exported by tracker servers
+    """
+
+    @staticmethod
+    def RegisterGenerator(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Tracker/RegisterGenerator',
+            scowl__pb2.GeneratorMetadata.SerializeToString,
+            scowl__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
