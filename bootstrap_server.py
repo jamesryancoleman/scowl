@@ -28,7 +28,7 @@ def LogRequest(request, context, response=None, to_log=False):
             f.write('Request:  {}\n'.format(request.addr))
             f.write('Context:  {}\n'.format(context.peer()))
             if response is not None:
-                f.write('Response: "{}"\n'.format(response))
+                f.write('Response: {}\n'.format(response))
             # f.write("------------ Request Handled  ------------\n")
     else:
         print("------------ Request Received ------------")
@@ -52,8 +52,9 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
             scowl_pb2.Id32Bit # [int]
         """
         id = mmh3.hash(request.addr, self.hash_seed)
-        id_str = id.to_bytes(4, "big", signed=True).decode('unicode_escape')
-        LogRequest(request, context, id_str, to_log=True)
+        # id_str = id.to_bytes(4, "big", signed=True).decode('unicode_escape')
+        LogRequest(request, context, id, to_log=True)
+        # TODO: Trigger tracker and metronome registration here.
         return scowl_pb2.Id32Bit(id=str(id))
 
     def ConsumerJoin(self, request, context):
@@ -63,8 +64,8 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
             scowl_pb2.Id32Bit # [int]
         """
         id = mmh3.hash128(request.addr, self.hash_seed)
-        id_str = id.to_bytes(16, "big", signed=True).decode('unicode_escape')
-        LogRequest(request, context, id_str, to_log=True)
+        # id_str = id.to_bytes(16, "big", signed=True).decode('unicode_escape')
+        LogRequest(request, context, id, to_log=True)
         return scowl_pb2.Id128Bit(id=str(id))
 
 def serve():

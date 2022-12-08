@@ -31,11 +31,11 @@ def getConsumerID(stub):
     """
     return stub.ConsumerJoin(scowl_pb2.PeerCtx(addr='192.168.0.2:3000'))
 
-def run():
+def run(dest_addr='localhost:50051'):
     # NOTE(gRPC Python Team): .close() is possible on a channel and should be
     # used in circumstances in which the with statement does not fit the needs
     # of the code.
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel(dest_addr) as channel:
         stub = scowl_pb2_grpc.BootstrapStub(channel)
 
         print("-------------- Generator ID --------------")
