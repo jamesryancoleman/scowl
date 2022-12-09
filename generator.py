@@ -22,6 +22,9 @@ ID        = None # 32-bit int
 tracker_id = None
 tracker_addr = None
 
+# server pointer used to stop after bootstrapping completed
+server = None
+
 LOG_PATH = 'sim/2030/logs/gen_{}.log'
 
 class GeneratorServicer(scowl_pb2_grpc.GeneratorServicer):
@@ -46,9 +49,7 @@ class GeneratorServicer(scowl_pb2_grpc.GeneratorServicer):
                 KIND == request.kind))
             print(" - Capacity =  {} --> {}".format(request.capacity, 
                 CAPACITY == request.capacity))
-        
         return scowl_pb2.Empty()
-
 
 
 def run():
@@ -71,7 +72,6 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     scowl_pb2_grpc.add_GeneratorServicer_to_server(
         GeneratorServicer(), server)
-    # server.add_insecure_port('[::]:50051') # what should this be?
     server.add_insecure_port(SRC_ADDR) 
     server.start()
     start_time = datetime.datetime.now().isoformat()
@@ -91,11 +91,7 @@ if __name__ == '__main__':
     #       then updating the tracker.
     server = threading.Thread(target=serve)
     server.start()
-    time.sleep(0.25) # need a moment for the server to start up
-    # server.join()
-    # serve() # this will block unless put on a thread
     intializer = threading.Thread(target=run)
     intializer.start()
     intializer.join()
-    # run()
     
