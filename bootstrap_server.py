@@ -88,12 +88,12 @@ def AssignBucket(hash_result: int, num_buckets=NUM_TRACKERS, break_points = None
             break
     return bucket
 
-def ShareNewGenerator(addr, id, kind, capacity):
+def ShareNewGenerator(tracker_addr, gen_addr, id, kind, capacity):
     """Share new Generator w/ Tracker"""
-    with grpc.insecure_channel(addr) as channel:
+    with grpc.insecure_channel(tracker_addr) as channel:
         stub = scowl_pb2_grpc.TrackerStub(channel)
         stub.RegisterGenerator(scowl_pb2.GeneratorMetadata(
-            addr=addr,
+            addr=gen_addr,
             id=id,
             kind=kind,
             capacity=capacity)) # returns None
@@ -119,7 +119,7 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
         #       and 
         tracker_id = AssignBucket(id, break_points=TRACKER_HASH_RANGES)
         tracker_addr = tracker_lookup[tracker_id]['addr'] + ":" + tracker_lookup[tracker_id]['port']
-        ShareNewGenerator(tracker_addr, str(id), request.kind, request.capacity)
+        ShareNewGenerator(tracker_addr, request.addr, str(id), request.kind, request.capacity)
         print("Assigned Gen_<{}> to Tracker_{} @ {}".format(id, tracker_id, tracker_addr))
         return scowl_pb2.Id32Bit(id=str(id))
 

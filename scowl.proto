@@ -30,6 +30,14 @@ message Id128Bit {
     string id = 1; // 128-bit hash used to identify consumers
 }
 
+message TrackerHello {
+    string tracker_addr = 1;      // where the generator can call back at
+    int32 tracker_id = 2; // The tracker's id
+    string gen_id = 3;    // the generator's id, assigned by Bootstrap server
+    string kind = 4;      // what the tracker believes the generator type is
+    double capacity = 5;  // what the tracker believes the generator capacity is
+}
+
 // the interfaces exported by the bootstrapping server
 service Bootstrap {
     // An RPC for a generator to request credentials from
@@ -49,4 +57,10 @@ message GeneratorMetadata {
 service Tracker {
     // RPC for a tracker to recevieve generator state from the bootstrap server.
     rpc RegisterGenerator(GeneratorMetadata) returns (Empty) {}
+}
+
+// the interfaces exported by generator servers
+service Generator {
+    // RPC for receiving TrackerHellos from the designated tracker
+    rpc ReceiveHello(TrackerHello) returns (Empty) {}
 }

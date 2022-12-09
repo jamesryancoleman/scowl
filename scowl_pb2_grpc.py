@@ -167,3 +167,68 @@ class Tracker(object):
             scowl__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+
+class GeneratorStub(object):
+    """the interfaces exported by generator servers
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.ReceiveHello = channel.unary_unary(
+                '/Generator/ReceiveHello',
+                request_serializer=scowl__pb2.TrackerHello.SerializeToString,
+                response_deserializer=scowl__pb2.Empty.FromString,
+                )
+
+
+class GeneratorServicer(object):
+    """the interfaces exported by generator servers
+    """
+
+    def ReceiveHello(self, request, context):
+        """RPC for receiving TrackerHellos from the designated tracker
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_GeneratorServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'ReceiveHello': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReceiveHello,
+                    request_deserializer=scowl__pb2.TrackerHello.FromString,
+                    response_serializer=scowl__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'Generator', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class Generator(object):
+    """the interfaces exported by generator servers
+    """
+
+    @staticmethod
+    def ReceiveHello(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Generator/ReceiveHello',
+            scowl__pb2.TrackerHello.SerializeToString,
+            scowl__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

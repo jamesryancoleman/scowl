@@ -56,6 +56,17 @@ def LogRequest(request, context, response=None, to_log=False, to_stdout=True):
         # if response is not None:
         #     print("Response {}".format(response))
 
+def SendGeneratorHello(request):
+    """Reach out to the Generator"""
+    with grpc.insecure_channel(request.addr) as channel:
+        stub = scowl_pb2_grpc.GeneratorStub(channel)
+        stub.ReceiveHello(scowl_pb2.TrackerHello(
+            tracker_addr='localhost' + ':' + str(LISTEN_PORT),
+            tracker_id=TRACKER_ID,
+            gen_id=request.id,
+            kind=request.kind,
+            capacity=request.capacity)) # returns None
+
 class TrackerServicer(scowl_pb2_grpc.TrackerServicer):
     """Provides methods that implement functionality of the scowl Tracker server"""
     def __init__(self):
@@ -69,6 +80,7 @@ class TrackerServicer(scowl_pb2_grpc.TrackerServicer):
         """
         self.Generators[request.id] = request
         LogRequest(request, context, to_log=True)
+        SendGeneratorHello(request)
         return scowl_pb2.Empty()
 
 def serve():
@@ -91,5 +103,5 @@ if __name__ == '__main__':
     #   1. Receiving generator bootstrap calls and issuing ACKs to genereators
     print("Tracker {} is responsible for:".format(TRACKER_ID))
     lower, upper = ComputeBucketRange(NUM_BUCKETS, TRACKER_ID, HASH_SIZE) 
-    print("IDs {} to {} ".format(lower, upper))
+    print("IDs [{} , {})".format(lower, upper))
     serve()
