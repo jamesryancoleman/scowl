@@ -142,7 +142,8 @@ def serve():
     server.start()
     start_time = datetime.datetime.now().isoformat()
     print("------------- Server Started -------------", )   
-    print('Started:', start_time)
+    print('Started: ', start_time)
+    print('Addr:    ', '[::]:50051')
     with open(LOG_PATH, "w") as f:
         f.write("------------- Server Started -------------\n")
         f.write('Started: {}\n'.format(start_time))

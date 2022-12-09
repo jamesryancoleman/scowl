@@ -184,6 +184,11 @@ class GeneratorStub(object):
                 request_serializer=scowl__pb2.TrackerHello.SerializeToString,
                 response_deserializer=scowl__pb2.Empty.FromString,
                 )
+        self.ShutDown = channel.unary_unary(
+                '/Generator/ShutDown',
+                request_serializer=scowl__pb2.Empty.SerializeToString,
+                response_deserializer=scowl__pb2.Empty.FromString,
+                )
 
 
 class GeneratorServicer(object):
@@ -197,12 +202,24 @@ class GeneratorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ShutDown(self, request, context):
+        """RPC for gracefully shutting down the server
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_GeneratorServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ReceiveHello': grpc.unary_unary_rpc_method_handler(
                     servicer.ReceiveHello,
                     request_deserializer=scowl__pb2.TrackerHello.FromString,
+                    response_serializer=scowl__pb2.Empty.SerializeToString,
+            ),
+            'ShutDown': grpc.unary_unary_rpc_method_handler(
+                    servicer.ShutDown,
+                    request_deserializer=scowl__pb2.Empty.FromString,
                     response_serializer=scowl__pb2.Empty.SerializeToString,
             ),
     }
@@ -229,6 +246,23 @@ class Generator(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Generator/ReceiveHello',
             scowl__pb2.TrackerHello.SerializeToString,
+            scowl__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ShutDown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Generator/ShutDown',
+            scowl__pb2.Empty.SerializeToString,
             scowl__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

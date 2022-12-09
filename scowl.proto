@@ -63,4 +63,6 @@ service Tracker {
 service Generator {
     // RPC for receiving TrackerHellos from the designated tracker
     rpc ReceiveHello(TrackerHello) returns (Empty) {}
+    // RPC for gracefully shutting down the server
+    rpc ShutDown(Empty) returns (Empty) {}
 }
