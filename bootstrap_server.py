@@ -1,4 +1,5 @@
 from concurrent import futures
+import numpy as np
 import datetime
 # import logging
 import grpc
@@ -13,19 +14,35 @@ import scowl_pb2_grpc
 
 # mmh3 has weird deprication warnings. Don't have time to investigate source
 import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+HASH_SIZE = 32 # bits
 
 # log file path
 LOG_PATH = 'sim/2030/logs/bootstrap_server.log'
 
 # Tracker IP address and port
-NUM_TRACKERS = sys.argv[1] # used to compute the port and host IP of tracker
+NUM_TRACKERS = int(sys.argv[1]) # used to compute the port and host IP of tracker
 TRACKER_HOST = 'localhost'
 TRACKER_PORT = 32000
 TRACKER_ADDR = TRACKER_HOST + ':' + str(TRACKER_PORT)
+TRACKER_HASH_RANGES = np.linspace((2**(HASH_SIZE-1) * -1), (2**(HASH_SIZE-1)), NUM_TRACKERS + 1, dtype=int)
 
-# this file should start with the general purpose fuctions that the 
-# BootstrapServicer class calls.
+# Path to Tracker Host IPs
+TRACKER_CONFIG = 'sim/2030/trackers/config/tracker_addrs.txt'
+
+# this will store the tracker address book
+tracker_lookup = {}
+
+def LoadTrackers(path: str = TRACKER_CONFIG):
+    """takes a path and returns the ip addresses found there"""
+    file = ""
+    with open(path, 'r') as reader:
+        file = reader.read()
+    return file.split('\n')
+
+# tracker IP addresses
+TRACKER_IPS = LoadTrackers(TRACKER_CONFIG)
 
 def LogRequest(request, context, response=None, to_log=False):
     if to_log:
@@ -49,6 +66,27 @@ def LogRequest(request, context, response=None, to_log=False):
         if response is not None:
             print("Response {}".format(response))
         print("------------ Request Handled  ------------")
+
+def GetTrackerLookup(num_trackers: int = NUM_TRACKERS, starting_port: int = TRACKER_PORT, hosts = 'localhost'):
+    lookup = {}
+    for i in range(num_trackers):
+        lookup[i] = {'host_id': 0, 'addr': 'localhost', 'port': str(starting_port + i)}
+    if hosts != 'localhost':
+        for i in range(num_trackers):
+            lookup[i]['host_id'] = i % len(hosts)
+            lookup[i]['addr'] = hosts[i % len(hosts)]
+    return lookup
+
+def AssignBucket(hash_result: int, num_buckets=NUM_TRACKERS, break_points = None, hash_size=HASH_SIZE):
+    break_points = break_points
+    if break_points is None:
+        break_points = np.linspace((2**(hash_size-1) * -1), (2**(hash_size-1)), num_buckets + 1, dtype=int)
+    bucket = None
+    for i in range(num_buckets):
+        if (hash_result >= break_points[i]) and (hash_result < break_points[i+1]):
+            bucket = i
+            break
+    return bucket
 
 def ShareNewGenerator(addr, id, kind, capacity):
     """Share new Generator w/ Tracker"""
@@ -77,8 +115,11 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
         id = mmh3.hash(request.addr, self.hash_seed)
         # id_str = id.to_bytes(4, "big", signed=True).decode('unicode_escape')
         LogRequest(request, context, id, to_log=True)
-        # TODO: Trigger tracker and metronome registration here.
-        ShareNewGenerator(request.addr, str(id), request.kind, request.capacity)
+        # TODO: replace addr with a value from the tracker_lookup,
+        #       and 
+        tracker_id = AssignBucket(id, break_points=TRACKER_HASH_RANGES)
+        tracker_addr = tracker_lookup[tracker_id]['addr'] + ":" + tracker_lookup[tracker_id]['port']
+        ShareNewGenerator(tracker_addr, str(id), request.kind, request.capacity)
         return scowl_pb2.Id32Bit(id=str(id))
 
     def ConsumerJoin(self, request, context):
@@ -106,7 +147,11 @@ def serve():
         f.write('Started: {}\n'.format(start_time))
     server.wait_for_termination()
 
-
 if __name__ == '__main__':
     # logging.basicConfig()
+    # ips = LoadTrackers()
+    # tracker_lookup = GetTrackerLookup(hosts=ips)
+    tracker_lookup = GetTrackerLookup()
+    for host_id in tracker_lookup:
+        print(host_id, tracker_lookup[host_id])
     serve()
