@@ -90,7 +90,7 @@ def AssignBucket(hash_result: int, num_buckets=NUM_TRACKERS, break_points = None
 
 def ShareNewGenerator(addr, id, kind, capacity):
     """Share new Generator w/ Tracker"""
-    with grpc.insecure_channel(TRACKER_ADDR) as channel:
+    with grpc.insecure_channel(addr) as channel:
         stub = scowl_pb2_grpc.TrackerStub(channel)
         stub.RegisterGenerator(scowl_pb2.GeneratorMetadata(
             addr=addr,
@@ -120,6 +120,7 @@ class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
         tracker_id = AssignBucket(id, break_points=TRACKER_HASH_RANGES)
         tracker_addr = tracker_lookup[tracker_id]['addr'] + ":" + tracker_lookup[tracker_id]['port']
         ShareNewGenerator(tracker_addr, str(id), request.kind, request.capacity)
+        print("Assigned Gen_<{}> to Tracker_{} @ {}".format(id, tracker_id, tracker_addr))
         return scowl_pb2.Id32Bit(id=str(id))
 
     def ConsumerJoin(self, request, context):
@@ -152,6 +153,7 @@ if __name__ == '__main__':
     # ips = LoadTrackers()
     # tracker_lookup = GetTrackerLookup(hosts=ips)
     tracker_lookup = GetTrackerLookup()
-    for host_id in tracker_lookup:
-        print(host_id, tracker_lookup[host_id])
+    print("------------- Known Trackers -------------")
+    for tracker_id in tracker_lookup:
+        print(tracker_id, tracker_lookup[tracker_id])
     serve()

@@ -37,7 +37,7 @@ def ComputeBucketRange(num_buckets: int = NUM_BUCKETS, bucket_id: int = TRACKER_
     upper = break_points[bucket_id+1]
     return lower, upper
 
-def LogRequest(request, context, response=None, to_log=False):
+def LogRequest(request, context, response=None, to_log=False, to_stdout=True):
     if to_log:
         with open(LOG_PATH, 'a') as f:
             f.write('------------ Request Received ------------\n')
@@ -46,9 +46,11 @@ def LogRequest(request, context, response=None, to_log=False):
             f.write('Src Addr: {}\n'.format(request.addr))
             f.write('Type:     "{}"\n'.format(request.kind))
             f.write('Capacity: {}\n'.format(request.capacity))
-    else:
-        print("------------ Request Received ------------")
+    if to_stdout:
+        print("------------ New Generator ------------")
         print("Date     {}".format(datetime.datetime.now()))
+        print("ID       {}".format(request.id))
+        print('Type:    "{}"\n'.format(request.kind))
         # print("Request  {}".format(request.addr))
         # print("Context  {}".format(context.peer()))
         # if response is not None:
@@ -89,5 +91,5 @@ if __name__ == '__main__':
     #   1. Receiving generator bootstrap calls and issuing ACKs to genereators
     print("Tracker {} is responsible for:".format(TRACKER_ID))
     lower, upper = ComputeBucketRange(NUM_BUCKETS, TRACKER_ID, HASH_SIZE) 
-    print("Lower: {} to {} ".format(lower, upper))
+    print("IDs {} to {} ".format(lower, upper))
     serve()
