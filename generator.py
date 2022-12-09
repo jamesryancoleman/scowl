@@ -8,7 +8,7 @@ import bootstrap_client as client
 
 SRC_ADDR  = sys.argv[1] # includes port, of format '111.111.1.1:32000'
 DEST_ADDR = sys.argv[2] # includes port, of format '111.111.1.1:32000'
-RTT       = int(sys.argv[3]) # in ms
+RTT       = int(sys.argv[3])   # in ms
 CAPACITY  = float(sys.argv[4]) # in MW
 KIND      = sys.argv[5] # nuclear, petroleum-fired, hydroelectric, natural, gas-fired, land-based wind, offshore wind, utility-scale solar, distributed solar
 
@@ -28,4 +28,9 @@ def run():
     print("Dest. rtt:    {}".format(RTT))
     
 if __name__ == '__main__':
+    # TODO: implement 3 threads of execution:
+    #   1. for the run() functions
+    #   2. for receiving tracker confirmations 
+    #   3. for mutating the generation state and the consumption state,
+    #       then updating the tracker.
     run()

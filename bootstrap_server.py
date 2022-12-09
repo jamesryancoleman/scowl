@@ -3,6 +3,7 @@ import datetime
 # import logging
 import grpc
 import mmh3
+import sys
 
 HASH_SEED = 42 # for use with mmh3
 
@@ -15,10 +16,13 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 # log file path
-LOG_PATH = 'logs/bootstrap_server.log'
+LOG_PATH = 'sim/2030/logs/bootstrap_server.log'
 
 # Tracker IP address and port
-TRACKER_ADDR = 'localhost:50052'
+NUM_TRACKERS = sys.argv[1] # used to compute the port and host IP of tracker
+TRACKER_HOST = 'localhost'
+TRACKER_PORT = 32000
+TRACKER_ADDR = TRACKER_HOST + ':' + str(TRACKER_PORT)
 
 # this file should start with the general purpose fuctions that the 
 # BootstrapServicer class calls.
@@ -97,7 +101,7 @@ def serve():
     start_time = datetime.datetime.now().isoformat()
     print("------------- Server Started -------------", )   
     print('Started:', start_time)
-    with open(LOG_PATH, "a") as f:
+    with open(LOG_PATH, "w") as f:
         f.write("------------- Server Started -------------\n")
         f.write('Started: {}\n'.format(start_time))
     server.wait_for_termination()

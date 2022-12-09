@@ -7,16 +7,35 @@ A tracker must:
         4a. unit size of consumption passed: 1 home / 0.00131 MW
 """
 from concurrent import futures
+import numpy as np
 import datetime
+import typing
 import grpc
 
 import scowl_pb2
 import scowl_pb2_grpc
 
+import sys
+
+# Generator hash size (bits)
+HASH_SIZE = 32
+
+# port to host the tracker on
+LISTEN_PORT = int(sys.argv[1]) # [0] is the program name
+HOST_ID = int(sys.argv[2])
+TRACKER_ID = LISTEN_PORT - 32000
+NUM_BUCKETS = int(sys.argv[3]) # int
+
 # log file path
-LOG_PATH = 'logs/tracker.log'
+LOG_PATH = 'sim/2030/logs/host_{}_tracker_{}.log'.format(HOST_ID, TRACKER_ID)
 
 RES_CONSUMPTION = 0.00131 # MW
+
+def ComputeBucketRange(num_buckets: int = NUM_BUCKETS, bucket_id: int = TRACKER_ID, hash_size: int = 32):
+    break_points = np.linspace((2**(hash_size-1) * -1), (2**(hash_size-1)), num_buckets + 1, dtype=int)
+    lower = break_points[bucket_id]
+    upper = break_points[bucket_id+1]
+    return lower, upper
 
 def LogRequest(request, context, response=None, to_log=False):
     if to_log:
@@ -54,16 +73,21 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     scowl_pb2_grpc.add_TrackerServicer_to_server(
         TrackerServicer(), server)
-    server.add_insecure_port('[::]:50052') # one higher than Bootstrap server
+    server.add_insecure_port('[::]:' + str(LISTEN_PORT)) # one higher than Bootstrap server
     server.start()
     start_time = datetime.datetime.now().isoformat()
     print("------------- Tracker Started -------------", )   
     print('Started:', start_time)
-    with open(LOG_PATH, "a") as f:
+    with open(LOG_PATH, "w") as f:
         f.write("------------- Tracker Started -------------\n")
         f.write('Started: {}\n'.format(start_time))
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
+    # TODO: add threading for:
+    #   1. Receiving generator bootstrap calls and issuing ACKs to genereators
+    print("Tracker {} is responsible for:".format(TRACKER_ID))
+    lower, upper = ComputeBucketRange(NUM_BUCKETS, TRACKER_ID, HASH_SIZE) 
+    print("Lower: {} to {} ".format(lower, upper))
     serve()
