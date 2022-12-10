@@ -7,6 +7,7 @@ A tracker must:
         4a. unit size of consumption passed: 1 home / 0.00131 MW
 """
 from concurrent import futures
+import pandas as pd
 import numpy as np
 import datetime
 import typing
@@ -16,7 +17,6 @@ import scowl_pb2
 import scowl_pb2_grpc
 
 import sys
-
 # Generator hash size (bits)
 HASH_SIZE = 32
 
@@ -30,6 +30,11 @@ NUM_BUCKETS = int(sys.argv[3]) # int
 LOG_PATH = 'sim/2030/logs/host_{}_tracker_{}.log'.format(HOST_ID, TRACKER_ID)
 
 RES_CONSUMPTION = 0.00131 # MW
+
+# a data frame with columns per STATE_COLUMNS and generators as rows
+STATE_COLUMNS = ['ts', 'output', 'demand']
+state = pd.DataFrame(columns=STATE_COLUMNS)
+state.index.name = 'id'
 
 def GetOwnIP():
     import socket   
@@ -88,6 +93,15 @@ class TrackerServicer(scowl_pb2_grpc.TrackerServicer):
         LogRequest(request, context, to_log=True)
         SendGeneratorHello(request)
         return scowl_pb2.Empty()
+    
+    def UpdateGeneratorState(self, request, context):
+        """request is a StateUpdate
+        Returns: Empty
+        """
+        global state # id: ['ts', 'output', 'demand']
+        state.loc[request.id] = [request.ts, request.output, request.demand]
+        print(state)
+        return scowl_pb2.Empty()
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -112,4 +126,5 @@ if __name__ == '__main__':
     print("Tracker {} is responsible for:".format(TRACKER_ID))
     lower, upper = ComputeBucketRange(NUM_BUCKETS, TRACKER_ID, HASH_SIZE) 
     print("IDs [{} , {})".format(lower, upper))
+    print(state)
     serve()

@@ -119,6 +119,11 @@ class TrackerStub(object):
                 request_serializer=scowl__pb2.GeneratorMetadata.SerializeToString,
                 response_deserializer=scowl__pb2.Empty.FromString,
                 )
+        self.UpdateGeneratorState = channel.unary_unary(
+                '/Tracker/UpdateGeneratorState',
+                request_serializer=scowl__pb2.StateUpdate.SerializeToString,
+                response_deserializer=scowl__pb2.Empty.FromString,
+                )
 
 
 class TrackerServicer(object):
@@ -132,12 +137,24 @@ class TrackerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdateGeneratorState(self, request, context):
+        """RPC for receiving StateUpdateMessages from generators
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TrackerServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'RegisterGenerator': grpc.unary_unary_rpc_method_handler(
                     servicer.RegisterGenerator,
                     request_deserializer=scowl__pb2.GeneratorMetadata.FromString,
+                    response_serializer=scowl__pb2.Empty.SerializeToString,
+            ),
+            'UpdateGeneratorState': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateGeneratorState,
+                    request_deserializer=scowl__pb2.StateUpdate.FromString,
                     response_serializer=scowl__pb2.Empty.SerializeToString,
             ),
     }
@@ -164,6 +181,23 @@ class Tracker(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Tracker/RegisterGenerator',
             scowl__pb2.GeneratorMetadata.SerializeToString,
+            scowl__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateGeneratorState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Tracker/UpdateGeneratorState',
+            scowl__pb2.StateUpdate.SerializeToString,
             scowl__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

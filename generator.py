@@ -46,6 +46,7 @@ class GeneratorServicer(scowl_pb2_grpc.GeneratorServicer):
         """
         # time.sleep(RTT/1000) # uncomment to add simluated latency
         global ID
+        global tracker_addr
         ID = request.gen_id
         tracker_id = request.tracker_id
         tracker_addr = request.tracker_addr
@@ -139,6 +140,8 @@ def mutateState():
     coef = GenOutputCoefficient(mu, sigma)
     output = CAPACITY * coef
 
+
+
     with open(LOG_PATH.format(ID), 'a') as writer:
             writer.write("--------------- New  State ---------------\n")
             writer.write('Timestamp:    {}\n'.format(state_ts))
@@ -148,10 +151,17 @@ def mutateState():
     state_ts += 1
 
 def mutate(stop_event: threading.Event, interval=1):
+    global tracker_addr, state_ts, output
+    global ID
+
     while True:
         if stop_event.is_set():
             break
         mutateState()
+        with grpc.insecure_channel(tracker_addr) as channel:
+            stub = scowl_pb2_grpc.TrackerStub(channel)
+            stub.UpdateGeneratorState(scowl_pb2.StateUpdate(
+                id=str(ID), ts=state_ts, output=output, demand=float(1)))
         time.sleep(interval)
 
 def run():
@@ -204,7 +214,7 @@ if __name__ == '__main__':
     intializer.start()
     intializer.join()
 
-    mutant = threading.Thread(target=mutate, args=(stop_flag,))
+    mutant = threading.Thread(target=mutate, args=(stop_flag, 5))
     mutant.start()
 
     # intializer.join()

@@ -53,10 +53,19 @@ message GeneratorMetadata {
     double capacity = 4; // in MegaWatts
 }
 
+message StateUpdate {
+    string id = 1;     // as signed by the bootstrapping server
+    int64 ts = 2;      // 64-bit lamport timestamp
+    double output = 3; // current output (MW)
+    double demand = 4; // current demand (MW)
+}
+
 // the interfaces exported by tracker servers
 service Tracker {
     // RPC for a tracker to recevieve generator state from the bootstrap server.
     rpc RegisterGenerator(GeneratorMetadata) returns (Empty) {}
+    // RPC for receiving StateUpdateMessages from generators
+    rpc UpdateGeneratorState(StateUpdate) returns (Empty) {}
 }
 
 // the interfaces exported by generator servers
