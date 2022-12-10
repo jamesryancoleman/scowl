@@ -31,6 +31,12 @@ LOG_PATH = 'sim/2030/logs/host_{}_tracker_{}.log'.format(HOST_ID, TRACKER_ID)
 
 RES_CONSUMPTION = 0.00131 # MW
 
+def GetOwnIP():
+    import socket   
+    hostname=socket.gethostname()   
+    IPAddr=socket.gethostbyname(hostname)
+    return IPAddr
+
 def ComputeBucketRange(num_buckets: int = NUM_BUCKETS, bucket_id: int = TRACKER_ID, hash_size: int = 32):
     break_points = np.linspace((2**(hash_size-1) * -1), (2**(hash_size-1)), num_buckets + 1, dtype=int)
     lower = break_points[bucket_id]
@@ -87,11 +93,13 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     scowl_pb2_grpc.add_TrackerServicer_to_server(
         TrackerServicer(), server)
+    addr = GetOwnIP() + ':' + str(LISTEN_PORT)
     server.add_insecure_port('[::]:' + str(LISTEN_PORT)) # one higher than Bootstrap server
     server.start()
     start_time = datetime.datetime.now().isoformat()
     print("------------- Tracker Started -------------", )   
-    print('Started:', start_time)
+    print('Started: ', start_time)
+    print('Addr:    ', addr)
     with open(LOG_PATH, "w") as f:
         f.write("------------- Tracker Started -------------\n")
         f.write('Started: {}\n'.format(start_time))

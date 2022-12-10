@@ -100,6 +100,12 @@ def ShareNewGenerator(tracker_addr, gen_addr, id, kind, capacity):
     print("--- Triaged Generator ---")
     print("ID: {}".format(id))
 
+def GetOwnIP():
+    import socket   
+    hostname=socket.gethostname()   
+    IPAddr=socket.gethostbyname(hostname)
+    return IPAddr
+
 
 class BootstrapServicer(scowl_pb2_grpc.BootstrapServicer):
     """Provides methods that implement functionality of scowl Bootstrapping server."""
@@ -138,12 +144,13 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     scowl_pb2_grpc.add_BootstrapServicer_to_server(
         BootstrapServicer(), server)
-    server.add_insecure_port('[::]:50051')
+    addr = GetOwnIP() + ':' + '50051'
+    server.add_insecure_port('[::]:50051') # 
     server.start()
     start_time = datetime.datetime.now().isoformat()
     print("------------- Server Started -------------", )   
     print('Started: ', start_time)
-    print('Addr:    ', '[::]:50051')
+    print('Addr:    ', addr)
     with open(LOG_PATH, "w") as f:
         f.write("------------- Server Started -------------\n")
         f.write('Started: {}\n'.format(start_time))
