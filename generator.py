@@ -1,4 +1,5 @@
 from concurrent import futures
+from collections import deque
 import threading
 import datetime
 import logging
@@ -24,10 +25,12 @@ ID        = None # 32-bit int, use the ip until the id is received
 OUTPUT_COEFFICIENTS = None # populated by startMutationEngine(). Rows = months
 OUTPUT_PERIOD_LENGTH = 3 # this could/should be user input
 
+WINDOW_SIZE = 5
+window = deque([] * WINDOW_SIZE)
 output = CAPACITY
 state_ts = 0 # lamport ts...
 rng = None   # psuedo-rng needs to be global for high entropy
-demand = CAPACITY * 0.75 # 75% of name plate capacity
+demand = CAPACITY * 0.75 # 75% of nominal capacity
 
 # Received from a TrackerHello
 tracker_id = None
@@ -107,7 +110,8 @@ def startMutationEngine():
     OUTPUT_COEFFICIENTS = outputs_matrix[KIND]
     return OUTPUT_COEFFICIENTS
 
-def GenOutputCoefficient(mu, sigma, size:int=1,seed=36921):
+# seed was 36921
+def GenOutputCoefficient(mu, sigma, size:int=1,seed=ID):
     """takes parameters from a normal dist.
     returns a list of coefficients.
     """
@@ -128,7 +132,7 @@ def GenOutputCoefficient(mu, sigma, size:int=1,seed=36921):
 def mutateState():
     """when called, it computes to the next state in its sequence"""
     global OUTPUT_COEFFICIENTS, CAPACITY
-    global state_ts, output
+    global state_ts, output, window
 
     if  OUTPUT_COEFFICIENTS is None:
         startMutationEngine()
@@ -140,6 +144,8 @@ def mutateState():
     mu = params[0]
     sigma = params[1]
     coef = GenOutputCoefficient(mu, sigma)
+    window.append(coef)
+    coef = np.array(window).mean()
     output = CAPACITY * coef
 
     with open(LOG_PATH.format(ID), 'a') as writer:
@@ -172,7 +178,7 @@ def run():
         stub = scowl_pb2_grpc.BootstrapStub(channel)
         gen_id = stub.GeneratorJoin(scowl_pb2.GeneratorCtx(
             addr=SRC_ADDR, kind=KIND, capacity=CAPACITY))
-    with open(LOG_PATH.format(SRC_ADDR), "w") as f:
+    with open(LOG_PATH.format(ID), "w") as f:
         f.write("-------------- ID  Received --------------\n")
         f.write('Gen ID: {}\n'.format(gen_id.id))
     print("---------- Generator Bootstrapped ----------")
@@ -225,7 +231,7 @@ if __name__ == '__main__':
     # No such file or directory: \'sim/2030/logs/gen_localhost:33001.log
     # time.sleep(0.25)
 
-    mutant = threading.Thread(target=mutate, args=(stop_flag,log_created, 5))
+    mutant = threading.Thread(target=mutate, args=(stop_flag,log_created, 2.5))
     mutant.start()
 
     # intializer.join()
