@@ -12,6 +12,7 @@ import numpy as np
 import datetime
 import typing
 import grpc
+import time
 
 import scowl_pb2
 import scowl_pb2_grpc
@@ -19,22 +20,25 @@ import scowl_pb2_grpc
 import sys
 # Generator hash size (bits)
 HASH_SIZE = 32
+START_PORT = 32000
 
 # port to host the tracker on
 LISTEN_PORT = int(sys.argv[1]) # [0] is the program name
 HOST_ID = int(sys.argv[2])
-TRACKER_ID = LISTEN_PORT - 32000
+TRACKER_ID = LISTEN_PORT - START_PORT
 NUM_BUCKETS = int(sys.argv[3]) # int
 
 # log file path
 LOG_PATH = 'sim/2030/logs/host_{}_tracker_{}.log'.format(HOST_ID, TRACKER_ID)
+DATA_PATH = 'sim/2030/logs/his/host_{}_tracker_{}.csv'.format(HOST_ID, TRACKER_ID)
 
 RES_CONSUMPTION = 0.00131 # MW
 
 # a data frame with columns per STATE_COLUMNS and generators as rows
-STATE_COLUMNS = ['ts', 'output', 'demand']
+STATE_COLUMNS = ['ts', 'host','tracker','output', 'demand', 'net_cap', 'percent_use']
 state = pd.DataFrame(columns=STATE_COLUMNS)
 state.index.name = 'id'
+state.to_csv(DATA_PATH) # start a new log
 
 def GetOwnIP():
     import socket   
@@ -69,6 +73,7 @@ def LogRequest(request, context, response=None, to_log=False, to_stdout=True):
 
 def SendGeneratorHello(request):
     """Reach out to the Generator"""
+    time.sleep(0.2)
     with grpc.insecure_channel(request.addr) as channel:
         stub = scowl_pb2_grpc.GeneratorStub(channel)
         stub.ReceiveHello(scowl_pb2.TrackerHello(
@@ -98,9 +103,34 @@ class TrackerServicer(scowl_pb2_grpc.TrackerServicer):
         """request is a StateUpdate
         Returns: Empty
         """
-        global state # id: ['ts', 'output', 'demand']
-        state.loc[request.id] = [request.ts, request.output, request.demand]
-        print(state)
+        global state # id: ['ts', 'output', 'demand', 'net_cap', 'net_cap_percent']
+        safe_net_cap_percent = None # this prevents a division by zero error
+        if request.output == 0:
+            safe_net_cap_percent = -1.0 # really negative infinity
+        else:
+            safe_net_cap_percent = (request.output - request.demand) / request.output
+        
+        state.loc[request.id] = [
+            request.ts,
+            HOST_ID,
+            TRACKER_ID,
+            request.output,
+            request.demand,
+            request.output - request.demand,
+            safe_net_cap_percent]
+        row = '{},{},{},{},{},{},{},{}\n'.format(
+                request.id,
+                request.ts,
+                HOST_ID,
+                TRACKER_ID,
+                request.output,
+                request.demand,
+                request.output - request.demand,
+                safe_net_cap_percent)
+        with open(DATA_PATH, 'a') as writer:
+            writer.write(row)
+        # print(state)
+        # this will be updated to return a demand change (+/-), 0 if none.
         return scowl_pb2.Empty()
 
 def serve():
@@ -126,5 +156,4 @@ if __name__ == '__main__':
     print("Tracker {} is responsible for:".format(TRACKER_ID))
     lower, upper = ComputeBucketRange(NUM_BUCKETS, TRACKER_ID, HASH_SIZE) 
     print("IDs [{} , {})".format(lower, upper))
-    print(state)
     serve()

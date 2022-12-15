@@ -26,7 +26,8 @@ OUTPUT_PERIOD_LENGTH = 3 # this could/should be user input
 
 output = CAPACITY
 state_ts = 0 # lamport ts...
-rng = None   # psuedo-rng needs to be global for high entropy 
+rng = None   # psuedo-rng needs to be global for high entropy
+demand = CAPACITY * 0.75 # 75% of name plate capacity
 
 # Received from a TrackerHello
 tracker_id = None
@@ -52,11 +53,12 @@ class GeneratorServicer(scowl_pb2_grpc.GeneratorServicer):
         tracker_addr = request.tracker_addr
 
         # rename the log file now that we know the ID
+        # time.sleep(1)
         os.rename(LOG_PATH.format(SRC_ADDR), LOG_PATH.format(ID))
         # global LOG_PATH
         # LOG_PATH = LOG_PATH.format(ID)  
         
-        check_metadata=True 
+        check_metadata=False 
         if check_metadata:
             print("-------------- Hello Received --------------")
             print("Tracker ID:    {}".format(tracker_id))
@@ -140,8 +142,6 @@ def mutateState():
     coef = GenOutputCoefficient(mu, sigma)
     output = CAPACITY * coef
 
-
-
     with open(LOG_PATH.format(ID), 'a') as writer:
             writer.write("--------------- New  State ---------------\n")
             writer.write('Timestamp:    {}\n'.format(state_ts))
@@ -150,18 +150,20 @@ def mutateState():
 
     state_ts += 1
 
-def mutate(stop_event: threading.Event, interval=1):
-    global tracker_addr, state_ts, output
+def mutate(stop_event: threading.Event, log_created: threading.Event, interval=1):
+    global tracker_addr, state_ts, output, demand
     global ID
 
+    log_created.wait()
     while True:
         if stop_event.is_set():
             break
         mutateState()
+        # tracker_addr has not been assigned in some cases
         with grpc.insecure_channel(tracker_addr) as channel:
             stub = scowl_pb2_grpc.TrackerStub(channel)
-            stub.UpdateGeneratorState(scowl_pb2.StateUpdate(
-                id=str(ID), ts=state_ts, output=output, demand=float(1)))
+            new_demand = stub.UpdateGeneratorState(scowl_pb2.StateUpdate(
+                id=str(ID), ts=state_ts, output=output, demand=demand))
         time.sleep(interval)
 
 def run():
@@ -170,16 +172,18 @@ def run():
         stub = scowl_pb2_grpc.BootstrapStub(channel)
         gen_id = stub.GeneratorJoin(scowl_pb2.GeneratorCtx(
             addr=SRC_ADDR, kind=KIND, capacity=CAPACITY))
-        
+    with open(LOG_PATH.format(SRC_ADDR), "w") as f:
+        f.write("-------------- ID  Received --------------\n")
+        f.write('Gen ID: {}\n'.format(gen_id.id))
     print("---------- Generator Bootstrapped ----------")
     print("Generator ID:  {}".format(gen_id.id))
-    print("Type:          {}".format(KIND))
-    print("Capacity:      {} MW".format(CAPACITY))
-    print("Source Addr:   {}".format(SRC_ADDR))
-    print("Dest. Addr:    {}".format(DEST_ADDR))
-    print("Dest. rtt:     {} ms".format(RTT))
+    # print("Type:          {}".format(KIND))
+    # print("Capacity:      {} MW".format(CAPACITY))
+    # print("Source Addr:   {}".format(SRC_ADDR))
+    # print("Dest. Addr:    {}".format(DEST_ADDR))
+    # print("Dest. rtt:     {} ms".format(RTT))
 
-def serve(stop_flag: threading.Event):
+def serve(stop_flag: threading.Event, log_created: threading.Event):
     """Used to receive TrackerHello message from assigned tracker"""
 
     generator_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -194,6 +198,8 @@ def serve(stop_flag: threading.Event):
     with open(LOG_PATH.format(SRC_ADDR), "w") as f:
         f.write("------------- Server Started -------------\n")
         f.write('Started: {}\n'.format(start_time))
+        f.write('Addr:    {}\n'.format(SRC_ADDR))
+    log_created.set()
     stop_flag.wait()
     generator_server.stop(None)
     # generator_server.wait_for_termination()
@@ -206,15 +212,20 @@ if __name__ == '__main__':
     #       then updating the tracker.
     
     stop_flag = threading.Event()
+    log_created = threading.Event()
 
-    server = threading.Thread(target=serve, args=(stop_flag,))
+    server = threading.Thread(target=serve, args=(stop_flag, log_created))
     server.start()
 
     intializer = threading.Thread(target=run)
     intializer.start()
     intializer.join()
 
-    mutant = threading.Thread(target=mutate, args=(stop_flag, 5))
+    # Accessing the disk too quickly can cause an error:
+    # No such file or directory: \'sim/2030/logs/gen_localhost:33001.log
+    # time.sleep(0.25)
+
+    mutant = threading.Thread(target=mutate, args=(stop_flag,log_created, 5))
     mutant.start()
 
     # intializer.join()
