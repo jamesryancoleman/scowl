@@ -25,6 +25,7 @@ ID        = None # 32-bit int, use the ip until the id is received
 OUTPUT_COEFFICIENTS = None # populated by startMutationEngine(). Rows = months
 OUTPUT_PERIOD_LENGTH = 3 # this could/should be user input
 
+REFRESH_RATE = 2 # seconds
 WINDOW_SIZE = 5
 window = deque([] * WINDOW_SIZE)
 output = CAPACITY
@@ -165,11 +166,17 @@ def mutate(stop_event: threading.Event, log_created: threading.Event, interval=1
         if stop_event.is_set():
             break
         mutateState()
-        # tracker_addr has not been assigned in some cases
         with grpc.insecure_channel(tracker_addr) as channel:
             stub = scowl_pb2_grpc.TrackerStub(channel)
-            new_demand = stub.UpdateGeneratorState(scowl_pb2.StateUpdate(
-                id=str(ID), ts=state_ts, output=output, demand=demand))
+            # print('CURRENT DEMAND:',demand, type(demand))
+            new_demand = stub.UpdateGeneratorState(
+                scowl_pb2.StateUpdate(
+                    id=str(ID),
+                    ts=state_ts,
+                    output=output,
+                    demand=demand))
+            demand = new_demand.demand
+        # print('NEW DEMAND:',demand, type(demand))
         time.sleep(interval)
 
 def run():
@@ -231,7 +238,7 @@ if __name__ == '__main__':
     # No such file or directory: \'sim/2030/logs/gen_localhost:33001.log
     # time.sleep(0.25)
 
-    mutant = threading.Thread(target=mutate, args=(stop_flag,log_created, 2.5))
+    mutant = threading.Thread(target=mutate, args=(stop_flag,log_created, REFRESH_RATE))
     mutant.start()
 
     # intializer.join()

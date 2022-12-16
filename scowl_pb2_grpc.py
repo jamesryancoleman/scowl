@@ -122,7 +122,7 @@ class TrackerStub(object):
         self.UpdateGeneratorState = channel.unary_unary(
                 '/Tracker/UpdateGeneratorState',
                 request_serializer=scowl__pb2.StateUpdate.SerializeToString,
-                response_deserializer=scowl__pb2.Empty.FromString,
+                response_deserializer=scowl__pb2.DemandUpdate.FromString,
                 )
 
 
@@ -155,7 +155,7 @@ def add_TrackerServicer_to_server(servicer, server):
             'UpdateGeneratorState': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateGeneratorState,
                     request_deserializer=scowl__pb2.StateUpdate.FromString,
-                    response_serializer=scowl__pb2.Empty.SerializeToString,
+                    response_serializer=scowl__pb2.DemandUpdate.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -198,7 +198,7 @@ class Tracker(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Tracker/UpdateGeneratorState',
             scowl__pb2.StateUpdate.SerializeToString,
-            scowl__pb2.Empty.FromString,
+            scowl__pb2.DemandUpdate.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -216,6 +216,11 @@ class GeneratorStub(object):
         self.ReceiveHello = channel.unary_unary(
                 '/Generator/ReceiveHello',
                 request_serializer=scowl__pb2.TrackerHello.SerializeToString,
+                response_deserializer=scowl__pb2.Empty.FromString,
+                )
+        self.UpdateDemand = channel.unary_unary(
+                '/Generator/UpdateDemand',
+                request_serializer=scowl__pb2.DemandUpdate.SerializeToString,
                 response_deserializer=scowl__pb2.Empty.FromString,
                 )
         self.ShutDown = channel.unary_unary(
@@ -236,6 +241,13 @@ class GeneratorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdateDemand(self, request, context):
+        """RPC for updating generator state
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ShutDown(self, request, context):
         """RPC for gracefully shutting down the server
         """
@@ -249,6 +261,11 @@ def add_GeneratorServicer_to_server(servicer, server):
             'ReceiveHello': grpc.unary_unary_rpc_method_handler(
                     servicer.ReceiveHello,
                     request_deserializer=scowl__pb2.TrackerHello.FromString,
+                    response_serializer=scowl__pb2.Empty.SerializeToString,
+            ),
+            'UpdateDemand': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateDemand,
+                    request_deserializer=scowl__pb2.DemandUpdate.FromString,
                     response_serializer=scowl__pb2.Empty.SerializeToString,
             ),
             'ShutDown': grpc.unary_unary_rpc_method_handler(
@@ -280,6 +297,23 @@ class Generator(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Generator/ReceiveHello',
             scowl__pb2.TrackerHello.SerializeToString,
+            scowl__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateDemand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Generator/UpdateDemand',
+            scowl__pb2.DemandUpdate.SerializeToString,
             scowl__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

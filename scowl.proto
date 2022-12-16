@@ -16,6 +16,10 @@ message PeerCtx {
     string addr = 1; // IPv4 and Port Number
 }
 
+message DemandUpdate {
+    double demand = 1; // in Megawatts
+}
+
 message GeneratorCtx {
     string addr = 1;     // IPv4 and Port Number
     string kind = 2;     // what type of generation facility is it
@@ -65,13 +69,15 @@ service Tracker {
     // RPC for a tracker to recevieve generator state from the bootstrap server.
     rpc RegisterGenerator(GeneratorMetadata) returns (Empty) {}
     // RPC for receiving StateUpdateMessages from generators
-    rpc UpdateGeneratorState(StateUpdate) returns (Empty) {}
+    rpc UpdateGeneratorState(StateUpdate) returns (DemandUpdate) {}
 }
 
 // the interfaces exported by generator servers
 service Generator {
     // RPC for receiving TrackerHellos from the designated tracker
     rpc ReceiveHello(TrackerHello) returns (Empty) {}
+    // RPC for updating generator state
+    rpc UpdateDemand(DemandUpdate) returns (Empty) {}
     // RPC for gracefully shutting down the server
     rpc ShutDown(Empty) returns (Empty) {}
 }
