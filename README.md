@@ -1,3 +1,5 @@
+* Please note this is out of date as of 12/16*
+
 # scowl
 Managing smart-grid resources with a distributed SCADA implemented with OWL
 
