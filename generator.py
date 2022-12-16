@@ -49,7 +49,6 @@ class GeneratorServicer(scowl_pb2_grpc.GeneratorServicer):
     def ReceiveHello(self, request, context):
         """RPC for receiving TrackerHellos from the designated tracker
         """
-        # time.sleep(RTT/1000) # uncomment to add simluated latency
         global ID
         global tracker_addr
         ID = request.gen_id
@@ -169,6 +168,7 @@ def mutate(stop_event: threading.Event, log_created: threading.Event, interval=1
         with grpc.insecure_channel(tracker_addr) as channel:
             stub = scowl_pb2_grpc.TrackerStub(channel)
             # print('CURRENT DEMAND:',demand, type(demand))
+            time.sleep(RTT/1000) # uncomment to add simluated latency
             new_demand = stub.UpdateGeneratorState(
                 scowl_pb2.StateUpdate(
                     id=str(ID),
